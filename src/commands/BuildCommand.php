@@ -9,26 +9,50 @@ use divengine\utils\Console;
 use divengine\core\ArgParser;
 use divengine\core\TemplateRunner;
 use divengine\core\Filesystem;
+use divengine\core\InputParser;
 
 class BuildCommand extends Command
 {
     protected string $name = 'build';
     protected string $description = 'Build artifacts from templates (prepares for multi-file generation)';
-    protected string $usage = 'div build <template> [--input=file.json] [--out-dir=directory] [--dry-run]';
+    protected string $usage = 'div build <template> [--input=file] [--out-dir=DIR] [--dry-run] [--format=FMT]';
     protected string $help = 'Build one or more artifacts from templates.
 
-This command is designed for generating final artifacts, potentially
-producing multiple files. In this initial version, it supports single
-template rendering with output to a directory.
+This command renders a template with input data and writes the output to a file.
+Designed for generating final artifacts (config files, source code, etc.).
 
-Arguments:
-  <template>          Path to the template file (.tpl)
+USAGE:
+  div build template.tpl --input=data.json --out-dir=dist
+  cat data.json | div build template.tpl --out-dir=generated
 
-Options:
-  --input=FILE        JSON file containing input data
-  --out-dir=DIR      Output directory (creates if not exists)
-  --dry-run           Show what would be built without writing
-  -h, --help         Show this help message';
+ARGUMENTS:
+  <template>          Path to the template file
+
+OPTIONS:
+  --input=FILE       Input file (JSON, YAML, XML, or PHP). If omitted, reads from stdin.
+  --format=FMT       Force input format (json, yaml, xml, php). Auto-detected if omitted.
+  --out-dir=DIR      Output directory (created if it does not exist)
+  --dry-run          Show what would be built without writing files
+  -h, --help         Show this help message
+
+OUTPUT:
+  Output filename is based on template name: template.tpl -> template.txt
+  Use --output=FILE for a custom output name.
+
+EXAMPLES:
+  # Dry run - preview what will be built
+  div build template.tpl --input=data.json --dry-run
+
+  # Build to output directory
+  div build template.tpl --input=data.json --out-dir=dist
+
+  # Build from stdin
+  cat config.yaml | div build template.tpl --out-dir=generated
+
+  # With PHP dynamic data
+  div build template.tpl --input=generate.php --out-dir=output
+
+See "div render --help" for detailed format documentation.';
 
     public function run(array $args): int
     {
@@ -37,6 +61,7 @@ Options:
         $inputFile = $parser->getOption('input');
         $outDir = $parser->getOption('out-dir');
         $dryRun = $parser->hasFlag('dry-run');
+        $format = $parser->getOption('format');
 
         if (empty($template)) {
             Console::error('Template name is required.');
@@ -55,15 +80,21 @@ Options:
         
         if ($inputFile) {
             if (!Filesystem::exists($inputFile)) {
-                Console::error("Input JSON file not found: {$inputFile}");
+                Console::error("Input file not found: {$inputFile}");
                 return 1;
             }
 
-            $content = Filesystem::readFile($inputFile);
-            $data = json_decode($content, true);
-
-            if (json_last_error() !== JSON_ERROR_NONE) {
-                Console::error('Invalid JSON in input file: ' . json_last_error_msg());
+            try {
+                $data = InputParser::parseFile($inputFile, $format);
+            } catch (\Throwable $e) {
+                Console::error("Failed to parse input: " . $e->getMessage());
+                return 1;
+            }
+        } elseif (InputParser::hasStdinData()) {
+            try {
+                $data = InputParser::parseStdin($format);
+            } catch (\Throwable $e) {
+                Console::error("Failed to parse stdin: " . $e->getMessage());
                 return 1;
             }
         }

@@ -1,0 +1,99 @@
+name: Release
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+env:
+  PHP_VERSION: '8.2'
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get version
+        id: version
+        run: |
+          # Get the latest tag on main
+          LAST_TAG=$(git describe --tags --abbrev=0 HEAD 2>/dev/null || echo "v0.0.0")
+          
+          # Count commits since last tag
+          COMMITS=$(git rev-list $LAST_TAG..HEAD --count)
+          
+          # If no commits since last tag, use the tag itself
+          if [ "$COMMITS" = "0" ]; then
+            echo "version=$LAST_TAG" >> $GITHUB_OUTPUT
+          else
+            # Extract major.minor from last tag
+            MAJOR_MINOR=$(echo $LAST_TAG | sed -E 's/^v([0-9]+\.[0-9]+).*/\1/')
+            # Create new patch version
+            echo "version=v${MAJOR_MINOR}.${COMMITS}" >> $GITHUB_OUTPUT
+          fi
+          
+          echo "tag=div-${{ steps.version.outputs.version }}" >> $GITHUB_OUTPUT
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ env.PHP_VERSION }}
+          extensions: phar
+          tools: composer:v2
+
+      - name: Install dependencies
+        run: composer install --no-interaction --prefer-dist
+
+      - name: Build PHAR
+        run: php -d phar.readonly=0 build/build-phar.php
+
+      - name: Test PHAR
+        run: |
+          php build/div.phar version
+          php build/div.phar --help
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.version.outputs.version }}
+          name: div CLI ${{ steps.version.outputs.version }}
+          body: |
+            ## div CLI ${{ steps.version.outputs.version }}
+            
+            **divengine/cli** - Runtime CLI for the Divengine template ecosystem.
+            
+            ### Installation
+            
+            **Unix/macOS:**
+            ```bash
+            curl -sSL https://raw.githubusercontent.com/divengine/cli/${{ steps.version.outputs.version }}/install | php
+            ```
+            
+            **Windows (with PHP):**
+            ```bash
+            php -r "copy('https://raw.githubusercontent.com/divengine/cli/${{ steps.version.outputs.version }}/install', 'div');"
+            ```
+            
+            **Direct download:**
+            Download `div.phar` from the assets below and make it executable.
+            
+            ### What's new
+            
+            See [CHANGELOG](https://github.com/divengine/cli/blob/${{ steps.version.outputs.version }}/CHANGELOG.md) for details.
+            
+            ### Requirements
+            
+            - PHP >= 8.1
+          files: build/div.phar
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

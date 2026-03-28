@@ -1,0 +1,185 @@
+#!/usr/bin/env php
+<?php
+/**
+ * div CLI Installer
+ * 
+ * Installs the div CLI tool on Unix/Linux/macOS systems.
+ * 
+ * Usage:
+ *   curl -sSL https://raw.githubusercontent.com/divengine/cli/main/install | php
+ *   curl -sSL https://raw.githubusercontent.com/divengine/cli/main/install | php -s --install-dir=/usr/local/bin
+ */
+
+declare(strict_types=1);
+
+$options = getopt('', ['install-dir::', 'help']);
+$installDir = $options['install-dir'] ?? null;
+$showHelp = isset($options['help']);
+
+if ($showHelp) {
+    echo <<<HELP
+div CLI Installer
+=================
+
+Usage:
+  curl -sSL https://raw.githubusercontent.com/divengine/cli/main/install | php
+  curl -sSL https://raw.githubusercontent.com/divengine/cli/main/install | php -s --install-dir=/usr/local/bin
+
+Options:
+  --install-dir=DIR    Directory to install div.phar (default: auto-detect)
+  --help               Show this help message
+
+HELP;
+    exit(0);
+}
+
+echo "\n";
+echo "  ██████╗ ██╗██╗   ██╗██████╗ ███████╗██████╗ \n";
+echo "  ██╔══██╗██║╚██╗ ██╔╝██╔══██╗██╔════╝██╔══██╗\n";
+echo "  ██████╔╝██║ ╚████╔╝ ██████╔╝█████╗  ██████╔╝\n";
+echo "  ██╔═══╝ ██║  ╚██╔╝  ██╔═══╝ ██╔══╝  ██╔══██╗\n";
+echo "  ██║     ██║   ██║   ██║     ███████╗██║  ██║\n";
+echo "  ╚═╝     ╚═╝   ╚═╝   ╚═╝     ╚══════╝╚═╝  ╚═╝\n";
+echo "\n";
+echo "  div CLI Installer\n";
+echo "  ─────────────────\n\n";
+
+// Detect OS
+$os = PHP_OS_FAMILY;
+$isWindows = $os === 'Windows';
+$isMac = $os === 'Darwin';
+$isLinux = $os === 'Linux';
+
+// Determine install directory
+if ($installDir === null) {
+    if ($isWindows) {
+        $installDir = getenv('USERPROFILE') . '\\bin';
+    } else {
+        $installDir = '/usr/local/bin';
+    }
+}
+
+// Create install directory if needed
+if (!is_dir($installDir)) {
+    if ($isWindows) {
+        mkdir($installDir, 0755, true);
+    } else {
+        mkdir($installDir, 0755, true);
+    }
+}
+
+$divPath = rtrim($installDir, '/\\') . ($isWindows ? '\\div' : '/div');
+$pharPath = $installDir . ($isWindows ? '\\div.phar' : '/div.phar');
+
+echo "  OS:         " . ($isWindows ? 'Windows' : ($isMac ? 'macOS' : 'Linux')) . "\n";
+echo "  Install to: {$installDir}\n\n";
+
+// Get latest release info from GitHub
+echo "  Fetching latest release...\n";
+
+$context = stream_context_create([
+    'http' => [
+        'method' => 'GET',
+        'header' => "User-Agent: div-installer/1.0\r\n",
+        'timeout' => 30,
+        'ignore_errors' => true,
+    ]
+]);
+
+$apiUrl = 'https://api.github.com/repos/divengine/cli/releases/latest';
+$response = @file_get_contents($apiUrl, false, $context);
+
+if ($response === false) {
+    echo "  ❌ Failed to fetch release info. Check your internet connection.\n\n";
+    exit(1);
+}
+
+$release = json_decode($response, true);
+
+if (json_last_error() !== JSON_ERROR_NONE || !isset($release['tag_name'])) {
+    echo "  ❌ Failed to parse release info.\n\n";
+    exit(1);
+}
+
+$version = $release['tag_name'];
+$downloadUrl = null;
+
+foreach ($release['assets'] ?? [] as $asset) {
+    if ($asset['name'] === 'div.phar') {
+        $downloadUrl = $asset['browser_download_url'];
+        break;
+    }
+}
+
+if ($downloadUrl === null) {
+    echo "  ❌ div.phar not found in latest release.\n";
+    echo "     Version: {$version}\n\n";
+    exit(1);
+}
+
+echo "  Version:    {$version}\n";
+echo "  Source:     {$downloadUrl}\n\n";
+
+// Download the PHAR
+echo "  Downloading...\n";
+
+$downloadContext = stream_context_create([
+    'http' => [
+        'method' => 'GET',
+        'header' => "User-Agent: div-installer/1.0\r\n",
+        'timeout' => 120,
+    ],
+    'ssl' => [
+        'verify_peer' => true,
+        'verify_peer_name' => true,
+    ]
+]);
+
+$pharContent = @file_get_contents($downloadUrl, false, $downloadContext);
+
+if ($pharContent === false) {
+    echo "  ❌ Failed to download div.phar.\n\n";
+    exit(1);
+}
+
+// Verify it's a valid PHAR
+if (!str_starts_with($pharContent, '#!/usr/bin/env php')) {
+    echo "  ⚠️  Warning: Downloaded file may not be a valid PHAR.\n";
+}
+
+// Write the PHAR
+if (file_put_contents($pharPath, $pharContent) === false) {
+    echo "  ❌ Failed to write {$pharPath}\n";
+    echo "     Check permissions.\n\n";
+    exit(1);
+}
+
+echo "  ✓ Downloaded div.phar\n";
+
+// Make executable on Unix
+if (!$isWindows) {
+    chmod($pharPath, 0755);
+    chmod($installDir . '/div', 0755);
+}
+
+echo "\n";
+echo "  ─────────────────────────────────────\n";
+echo "  ✓ Installation complete!\n";
+echo "  ─────────────────────────────────────\n\n";
+
+if ($isWindows) {
+    echo "  Run: php {$pharPath} --help\n";
+    echo "\n";
+    echo "  To use without 'php', add {$installDir} to your PATH.\n";
+} else {
+    echo "  Run: {$pharPath} --help\n";
+    echo "\n";
+    echo "  To run as 'div' without the .phar extension:\n";
+    echo "    ln -s {$pharPath} {$installDir}/div\n";
+    echo "    # or\n";
+    echo "    mv {$pharPath} {$installDir}/div && chmod +x {$installDir}/div\n";
+}
+
+echo "\n";
+echo "  Learn more: https://github.com/divengine/cli\n";
+echo "\n";

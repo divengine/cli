@@ -23,28 +23,42 @@
 
 ## Installation
 
-### Global Install (Recommended)
+### Quick Install (Recommended)
 
 **Linux / macOS:**
 ```bash
-./bin/install.sh
-# Or system-wide (requires sudo):
-# sudo ./bin/install.sh /usr/local/bin
+curl -sSL https://raw.githubusercontent.com/divengine/cli/main/install | php
 ```
 
-**Windows:**
+**Windows (PowerShell):**
+```powershell
+irm https://raw.githubusercontent.com/divengine/cli/main/install.ps1 | iex
+```
+
+**Windows (CMD):**
 ```cmd
-bin\install.bat
+curl -sL https://raw.githubusercontent.com/divengine/cli/main/install.bat -o install.bat && install.bat
 ```
 
 After installation, restart your terminal and run `div --help`.
 
-### Local Install
+### Custom Install Directory
+
+```bash
+# Install to custom directory
+curl -sSL https://raw.githubusercontent.com/divengine/cli/main/install | php -s --install-dir=/opt/bin
+```
+
+### Local Install (from source)
 
 ```bash
 composer install
 ./bin/div --help
 ```
+
+## Requirements
+
+- PHP >= 8.1
 
 ## Commands
 
@@ -64,37 +78,46 @@ div version
 # Output: Divengine CLI v1.0.0
 ```
 
-### `div render <template> [--input=file.json] [--output=file]`
-Render a template with input data.
+### `div render <template> [--input=file] [--output=file]`
+Render a template with input data. Input format auto-detected (JSON, YAML, XML, PHP).
 
 ```bash
-# Render with stdin context
-div render template.tpl
+# Pipe JSON from stdin
+echo '{"name": "World"}' | div render template.tpl
 
-# Render with JSON input file
+# Pipe YAML from stdin
+cat config.yaml | div render template.tpl
+
+# Pipe XML from stdin
+echo '<data name="Test"/>' | div render template.tpl
+
+# Input file (overrides stdin if both present)
 div render template.tpl --input=data.json
 
-# Render and save to file
+# Force format
+div render template.tpl --input=data.txt --format=yaml
+
+# Save output to file
 div render template.tpl --input=data.json --output=result.txt
 ```
 
-### `div transform <template> [--input=file.json] [--output=file]`
+### `div transform <template> [--input=file] [--output=file]`
 Transform data through a template (semantic alias for render).
 
 ```bash
-# Same syntax as render
-div transform template.tpl --input=data.json
+# Same stdin/file support as render
+echo '{"key": "value"}' | div transform template.tpl
 ```
 
-### `div build <template> [--input=file.json] [--out-dir=dir] [--dry-run]`
+### `div build <template> [--input=file] [--out-dir=dir] [--dry-run]`
 Build artifacts from templates.
 
 ```bash
+# Pipe input from stdin
+cat data.json | div build template.tpl --out-dir=dist
+
 # Dry run (show what would be built)
 div build template.tpl --input=data.json --dry-run
-
-# Build to specific directory
-div build template.tpl --input=data.json --out-dir=generated
 ```
 
 ### `div templates [path]`
@@ -132,11 +155,11 @@ div doctor
 
 ## Template Format
 
-Templates use `{{variable}}` syntax for variable substitution:
+Templates use `{$variable}` syntax for variable substitution (Divengine syntax):
 
 ```tpl
-Hello, {{name}}!
-Your order #{{order_id}} is ready.
+Hello, {$name}!
+Your order #{$order_id} is ready.
 ```
 
 With input JSON:
@@ -153,7 +176,7 @@ With input JSON:
 
 ```bash
 # Create a template
-echo "Hello, {{name}}!" > greet.tpl
+echo "Hello, {$name}!" > greet.tpl
 
 # Create data file
 echo '{"name": "World"}' > data.json
@@ -237,7 +260,7 @@ $this->register(new \divengine\commands\MyCommand());
 ## Future Capabilities (Planned)
 
 - [x] Basic template rendering (fallback engine)
-- [ ] Full divengine/div integration
+- [x] Full divengine/div integration
 - [ ] Package-based template resolution (`org/package/template`)
 - [ ] Multi-file template generation
 - [ ] Template caching system

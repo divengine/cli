@@ -9,24 +9,45 @@ use divengine\utils\Console;
 use divengine\core\ArgParser;
 use divengine\core\TemplateRunner;
 use divengine\core\Filesystem;
+use divengine\core\InputParser;
 
 class TransformCommand extends Command
 {
     protected string $name = 'transform';
     protected string $description = 'Transform data using a template (alias for render with semantic focus on transformation)';
-    protected string $usage = 'div transform <template> [--input=file.json] [--output=file]';
+    protected string $usage = 'div transform <template> [--input=file] [--output=file] [--format=FMT]';
     protected string $help = 'Transform input data through a template to produce transformed output.
 
 This command is semantically focused on data transformation workflows,
-producing intermediate or transformed results.
+producing intermediate or transformed results. Same options as render.
 
-Arguments:
-  <template>          Path to the template file (.tpl)
+USAGE:
+  div transform template.tpl --input=data.json
+  cat data.json | div transform template.tpl
 
-Options:
-  --input=FILE        JSON file containing input data
+ARGUMENTS:
+  <template>          Path to the template file
+
+OPTIONS:
+  --input=FILE       Input file (JSON, YAML, XML, or PHP). If omitted, reads from stdin.
+  --format=FMT       Force input format (json, yaml, xml, php). Auto-detected if omitted.
   --output=FILE      Output file (default: stdout)
-  -h, --help         Show this help message';
+  -h, --help         Show this help message
+
+EXAMPLES:
+  # Transform JSON file
+  div transform template.tpl --input=data.json
+
+  # Transform from stdin
+  echo \'{"key": "value"}\' | div transform template.tpl
+
+  # Save transformed output
+  div transform template.tpl --input=data.json --output=result.txt
+
+  # XML transformation
+  echo \'<config><setting>value</setting></config>\' | div transform template.tpl
+
+See "div render --help" for detailed format documentation.';
 
     public function run(array $args): int
     {
@@ -34,6 +55,7 @@ Options:
         $template = $parser->getPositional(0);
         $inputFile = $parser->getOption('input');
         $outputFile = $parser->getOption('output');
+        $format = $parser->getOption('format');
 
         if (empty($template)) {
             Console::error('Template name is required.');
@@ -52,15 +74,14 @@ Options:
         
         if ($inputFile) {
             if (!Filesystem::exists($inputFile)) {
-                Console::error("Input JSON file not found: {$inputFile}");
+                Console::error("Input file not found: {$inputFile}");
                 return 1;
             }
 
-            $content = Filesystem::readFile($inputFile);
-            $data = json_decode($content, true);
-
-            if (json_last_error() !== JSON_ERROR_NONE) {
-                Console::error('Invalid JSON in input file: ' . json_last_error_msg());
+            try {
+                $data = InputParser::parseFile($inputFile, $format);
+            } catch (\Throwable $e) {
+                Console::error("Failed to parse input: " . $e->getMessage());
                 return 1;
             }
 
@@ -69,6 +90,20 @@ Options:
                 ['text' => $template, 'color' => Console::YELLOW],
                 ['text' => ' <- ', 'color' => Console::GRAY],
                 ['text' => $inputFile, 'color' => Console::YELLOW],
+            ]);
+        } elseif (InputParser::hasStdinData()) {
+            try {
+                $data = InputParser::parseStdin($format);
+            } catch (\Throwable $e) {
+                Console::error("Failed to parse stdin: " . $e->getMessage());
+                return 1;
+            }
+
+            Console::segments([
+                ['text' => '[transform] ', 'color' => Console::CYAN, 'bold' => true],
+                ['text' => $template, 'color' => Console::YELLOW],
+                ['text' => ' <- ', 'color' => Console::GRAY],
+                ['text' => '<stdin>', 'color' => Console::GRAY],
             ]);
         } else {
             Console::segments([
