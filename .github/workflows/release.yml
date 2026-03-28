@@ -60,6 +60,20 @@ jobs:
           php build/div.phar version
           php build/div.phar --help
 
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Pandoc and LaTeX
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y pandoc texlive-xetex texlive-latex-recommended texlive-latex-extra texlive-fonts-recommended
+
+      - name: Build PDF documentation
+        run: |
+          python scripts/build_pdf.py --output build/div-documentation-${{ steps.version.outputs.version }}.pdf --title "Div CLI ${{ steps.version.outputs.version }}"
+
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
@@ -92,7 +106,9 @@ jobs:
             ### Requirements
             
             - PHP >= 8.1
-          files: build/div.phar
+          files: |
+            build/div.phar
+            build/div-documentation-${{ steps.version.outputs.version }}.pdf
           draft: false
           prerelease: false
         env:
