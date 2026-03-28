@@ -7,7 +7,8 @@
 1. [Installation](01.%20Installation.md)
 2. [Commands](02.%20Commands.md)
 3. [Input Formats](03.%20Input%20Formats.md)
-4. [Template Syntax](04.%20Template%20Syntax.md)
+
+For template syntax, see [divengine/div documentation](https://github.com/divengine/div/tree/main/docs).
 
 ## Overview
 

@@ -72,7 +72,7 @@ jobs:
 
       - name: Build PDF documentation
         run: |
-          python scripts/build_pdf.py --output build/div-documentation-${{ steps.version.outputs.version }}.pdf --title "Div CLI ${{ steps.version.outputs.version }}"
+          python scripts/build_pdf.py --output build/div-cli-${{ steps.version.outputs.version }}.pdf --title "Div CLI ${{ steps.version.outputs.version }}"
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
@@ -108,7 +108,7 @@ jobs:
             - PHP >= 8.1
           files: |
             build/div.phar
-            build/div-documentation-${{ steps.version.outputs.version }}.pdf
+            build/div-cli-${{ steps.version.outputs.version }}.pdf
           draft: false
           prerelease: false
         env:
