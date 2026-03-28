@@ -1,0 +1,119 @@
+<?php
+
+declare(strict_types=1);
+
+namespace divengine\commands;
+
+use divengine\cli\Command;
+use divengine\utils\Console;
+use divengine\core\ArgParser;
+use divengine\core\TemplateRunner;
+use divengine\core\Filesystem;
+
+class BuildCommand extends Command
+{
+    protected string $name = 'build';
+    protected string $description = 'Build artifacts from templates (prepares for multi-file generation)';
+    protected string $usage = 'div build <template> [--input=file.json] [--out-dir=directory] [--dry-run]';
+    protected string $help = 'Build one or more artifacts from templates.
+
+This command is designed for generating final artifacts, potentially
+producing multiple files. In this initial version, it supports single
+template rendering with output to a directory.
+
+Arguments:
+  <template>          Path to the template file (.tpl)
+
+Options:
+  --input=FILE        JSON file containing input data
+  --out-dir=DIR      Output directory (creates if not exists)
+  --dry-run           Show what would be built without writing
+  -h, --help         Show this help message';
+
+    public function run(array $args): int
+    {
+        $parser = new ArgParser($args);
+        $template = $parser->getPositional(0);
+        $inputFile = $parser->getOption('input');
+        $outDir = $parser->getOption('out-dir');
+        $dryRun = $parser->hasFlag('dry-run');
+
+        if (empty($template)) {
+            Console::error('Template name is required.');
+            Console::note('Run "div build --help" for usage information.');
+            return 1;
+        }
+
+        $templatePath = Filesystem::absolutePath($template);
+        
+        if (!Filesystem::exists($templatePath)) {
+            Console::error("Template file not found: {$template}");
+            return 1;
+        }
+
+        $data = [];
+        
+        if ($inputFile) {
+            if (!Filesystem::exists($inputFile)) {
+                Console::error("Input JSON file not found: {$inputFile}");
+                return 1;
+            }
+
+            $content = Filesystem::readFile($inputFile);
+            $data = json_decode($content, true);
+
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                Console::error('Invalid JSON in input file: ' . json_last_error_msg());
+                return 1;
+            }
+        }
+
+        $runner = new TemplateRunner();
+        $templateName = pathinfo($template, PATHINFO_FILENAME);
+        $outputFile = ($outDir ? rtrim($outDir, '/\\') . DIRECTORY_SEPARATOR : '') . $templateName . '.txt';
+
+        Console::segments([
+            ['text' => '[build] ', 'color' => Console::CYAN, 'bold' => true],
+            ['text' => $template, 'color' => Console::YELLOW],
+        ]);
+
+        if ($dryRun) {
+            Console::warning('Dry run mode - no files will be written');
+            Console::line();
+            Console::label('Build Plan:');
+            Console::kv('Template', Filesystem::absolutePath($template));
+            Console::kv('Input', $inputFile ?: '(none)');
+            Console::kv('Output', $outputFile);
+            Console::kv('Out Dir', $outDir ?: '(current directory)');
+            Console::line();
+            Console::note('Run without --dry-run to execute.');
+            return 0;
+        }
+
+        try {
+            Console::progress('Building...');
+
+            $result = $runner->render($templatePath, $data);
+
+            if ($outDir) {
+                Filesystem::ensureDir($outDir);
+            }
+
+            Filesystem::writeFile($outputFile, $result);
+            Console::clearProgress();
+
+            Console::segments([
+                ['text' => '[build] ', 'color' => Console::GREEN, 'bold' => true],
+                ['text' => $outputFile, 'color' => Console::YELLOW],
+                ['text' => ' -> ', 'color' => Console::GRAY],
+                ['text' => 'OK', 'color' => Console::GREEN, 'bold' => true],
+            ]);
+        } catch (\Throwable $e) {
+            Console::clearProgress();
+            Console::error($e->getMessage());
+            return 1;
+        }
+
+        return 0;
+    }
+}

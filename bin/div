@@ -1,0 +1,53 @@
+#!/usr/bin/env php
+<?php
+/**
+ * Divengine CLI - Entrypoint
+ * 
+ * Searches for vendor/autoload.php using multiple strategies:
+ * 1. DIV_CLI_ROOT environment variable (set by global installer)
+ * 2. Walk up from script directory until vendor/autoload.php found
+ * 3. Walk up from current working directory
+ */
+
+function findAutoload(): string|null
+{
+    $searchPaths = [];
+    
+    if (getenv('DIV_CLI_ROOT')) {
+        $searchPaths[] = getenv('DIV_CLI_ROOT');
+    }
+    
+    $scriptDir = dirname(__FILE__);
+    while ($scriptDir !== dirname($scriptDir)) {
+        $searchPaths[] = $scriptDir;
+        $scriptDir = dirname($scriptDir);
+    }
+    
+    $cwd = getcwd();
+    while ($cwd !== dirname($cwd)) {
+        $searchPaths[] = $cwd;
+        $cwd = dirname($cwd);
+    }
+    
+    foreach ($searchPaths as $dir) {
+        $autoload = $dir . '/vendor/autoload.php';
+        if (file_exists($autoload)) {
+            return $autoload;
+        }
+    }
+    
+    return null;
+}
+
+$autoloadPath = findAutoload();
+
+if ($autoloadPath === null) {
+    fwrite(STDERR, "Error: Could not find vendor/autoload.php\n");
+    fwrite(STDERR, "Please run 'composer install' in the project directory.\n");
+    exit(1);
+}
+
+require $autoloadPath;
+
+$app = new divengine\cli\Application();
+exit($app->run($argv));
