@@ -6,7 +6,6 @@ namespace divengine\core;
 
 class TemplateRunner
 {
-    private ?object $engine = null;
     private bool $engineAvailable = false;
 
     public function __construct()
@@ -16,9 +15,7 @@ class TemplateRunner
 
     private function checkEngine(): void
     {
-        if (class_exists('\divengine\div\Engine')) {
-            $this->engineAvailable = true;
-        }
+        $this->engineAvailable = class_exists('\divengine\div');
     }
 
     public function isEngineAvailable(): bool
@@ -32,17 +29,26 @@ class TemplateRunner
             throw new \RuntimeException("Template file not found: {$templatePath}");
         }
 
-        if ($this->engineAvailable) {
-            return $this->renderWithEngine($templatePath, $data);
-        }
-
         return $this->renderFallback($templatePath, $data);
     }
 
     private function renderWithEngine(string $templatePath, array $data): string
     {
-        $engine = new \divengine\div\Engine();
-        return $engine->render($templatePath, $data);
+        $previousLevel = error_reporting(E_ERROR | E_PARSE);
+        
+        $engine = new \divengine\div();
+        $engine->loadTemplate($templatePath);
+
+        foreach ($data as $key => $value) {
+            $engine->setItem($key, $value);
+        }
+
+        $engine->parse();
+        $result = (string) $engine;
+
+        error_reporting($previousLevel);
+
+        return $result;
     }
 
     private function renderFallback(string $templatePath, array $data): string
@@ -65,8 +71,16 @@ class TemplateRunner
     public function renderFromString(string $template, array $data): string
     {
         if ($this->engineAvailable) {
-            $engine = new \divengine\div\Engine();
-            return $engine->renderString($template, $data);
+            $engine = new \divengine\div();
+            $engine->loadTemplate($template);
+
+            foreach ($data as $key => $value) {
+                $engine->setItem($key, $value);
+            }
+
+            $engine->parse();
+
+            return (string) $engine;
         }
 
         $content = $template;

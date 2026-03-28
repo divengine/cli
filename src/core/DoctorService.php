@@ -62,14 +62,14 @@ class DoctorService
 
     private function checkDivEngine(): void
     {
-        $passed = class_exists('\divengine\div\Engine');
+        $passed = class_exists('\divengine\div');
         
         $this->addCheck(
             'divengine/div',
             $passed,
             $passed 
                 ? 'divengine/div is available'
-                : 'divengine/div not installed (optional)'
+                : 'divengine/div is required but not installed'
         );
     }
 
