@@ -11,13 +11,6 @@ param(
 $ErrorActionPreference = "Stop"
 
 Write-Host ""
-Write-Host "  ██████╗ ██╗██╗   ██╗██████╗ ███████╗██████╗ " -ForegroundColor Cyan
-Write-Host "  ██╔══██╗██║╚██╗ ██╔╝██╔══██╗██╔════╝██╔══██╗" -ForegroundColor Cyan
-Write-Host "  ██████╔╝██║ ╚████╔╝ ██████╔╝█████╗  ██████╔╝" -ForegroundColor Cyan
-Write-Host "  ██╔═══╝ ██║  ╚██╔╝  ██╔═══╝ ██╔══╝  ██╔══██╗" -ForegroundColor Cyan
-Write-Host "  ██║     ██║   ██║   ██║     ███████╗██║  ██║" -ForegroundColor Cyan
-Write-Host "  ╚═╝     ╚═╝   ╚═╝   ╚═╝     ╚══════╝╚═╝  ╚═╝" -ForegroundColor Cyan
-Write-Host ""
 Write-Host "  div CLI Installer (Windows)" -ForegroundColor Gray
 Write-Host "  ─────────────────────────────" -ForegroundColor Gray
 Write-Host ""
