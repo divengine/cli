@@ -4,9 +4,9 @@
 
 ## Table of Contents
 
-1. [Installation](01.%20Installation.md)
-2. [Commands](02.%20Commands.md)
-3. [Input Formats](03.%20Input%20Formats.md)
+1. [Installation](01.Installation.md)
+2. [Commands](02.Commands.md)
+3. [Input Formats](03.Input-Formats.md)
 
 For template syntax, see [divengine/div documentation](https://github.com/divengine/div/tree/main/docs).
 
