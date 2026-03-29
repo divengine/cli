@@ -43,7 +43,6 @@ class Application
         $this->register(new \divengine\commands\VersionCommand($this));
         $this->register(new \divengine\commands\DoctorCommand());
         $this->register(new \divengine\commands\RenderCommand());
-        $this->register(new \divengine\commands\TransformCommand());
         $this->register(new \divengine\commands\BuildCommand());
         $this->register(new \divengine\commands\TemplatesCommand());
         $this->register(new \divengine\commands\PackagesCommand());

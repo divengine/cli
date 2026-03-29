@@ -115,14 +115,6 @@ div render template.tpl --input=data.txt --format=yaml
 div render template.tpl --input=data.json --output=result.txt
 ```
 
-### `div transform <template> [--input=file] [--output=file]`
-Transform data through a template (semantic alias for render).
-
-```bash
-# Same stdin/file support as render
-echo '{"key": "value"}' | div transform template.tpl
-```
-
 ### `div build <template> [--input=file] [--out-dir=dir] [--dry-run]`
 Build artifacts from templates.
 
