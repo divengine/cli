@@ -49,11 +49,25 @@ After installation, restart your terminal and run `div --help`.
 curl -sSL https://raw.githubusercontent.com/divengine/cli/main/install | php -s --install-dir=/opt/bin
 ```
 
-### Local Install (from source)
+### Development Install (Local)
+
+If you're developing div CLI, install from local source:
 
 ```bash
+# Clone and install from local build
+git clone https://github.com/divengine/cli.git
+cd cli
+php install --local
+
+# This will:
+# 1. Build the PHAR from source (if not exists)
+# 2. Install it to /usr/local/bin
+```
+
+For manual development:
+```bash
 composer install
-./bin/div --help
+php bin/div --help
 ```
 
 ## Requirements
