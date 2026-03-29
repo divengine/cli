@@ -152,13 +152,6 @@ div resolve template.tpl
 # Output: /absolute/path/to/template.tpl
 ```
 
-### `div doctor`
-Run environment diagnostics.
-
-```bash
-div doctor
-```
-
 ## Template Format
 
 Templates use `{$variable}` syntax for variable substitution (Divengine syntax):

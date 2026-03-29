@@ -41,7 +41,6 @@ class Application
     {
         $this->register(new \divengine\commands\HelpCommand($this));
         $this->register(new \divengine\commands\VersionCommand($this));
-        $this->register(new \divengine\commands\DoctorCommand());
         $this->register(new \divengine\commands\RenderCommand());
         $this->register(new \divengine\commands\BuildCommand());
         $this->register(new \divengine\commands\TemplatesCommand());
