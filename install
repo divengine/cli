@@ -1,0 +1,223 @@
+#!/usr/bin/env php
+<?php
+/**
+ * div CLI Installer
+ * 
+ * Installs the div CLI tool from local source or downloads from GitHub.
+ * 
+ * Usage:
+ *   # Install from local source (development)
+ *   php install --from-here
+ *   
+ *   # Download from GitHub releases (production)
+ *   curl -sSL https://raw.githubusercontent.com/divengine/cli/main/install | php
+ */
+
+declare(strict_types=1);
+
+$options = getopt('', ['from-here', 'install-dir::', 'help']);
+$fromHere = isset($options['from-here']);
+$installDir = $options['install-dir'] ?? null;
+$showHelp = isset($options['help']);
+
+if ($showHelp) {
+    echo <<<HELP
+div CLI Installer
+=================
+
+Usage:
+  # Install from local source (for development)
+  php install --from-here
+  
+  # Download from GitHub releases (for production)
+  curl -sSL https://raw.githubusercontent.com/divengine/cli/main/install | php
+
+Options:
+  --from-here        Use local source/build instead of downloading
+  --install-dir=DIR  Directory to install (default: auto-detect)
+  --help             Show this help message
+
+HELP;
+    exit(0);
+}
+
+echo "\n";
+echo "  div CLI Installer\n";
+echo "  ─────────────────\n\n";
+
+// Detect OS
+$os = PHP_OS_FAMILY;
+$isWindows = $os === 'Windows';
+$isMac = $os === 'Darwin';
+
+// Determine project root (where this script is located)
+$scriptPath = __FILE__;
+$projectRoot = dirname($scriptPath);
+
+// Determine install directory
+if ($installDir === null) {
+    if ($isWindows) {
+        $installDir = getenv('USERPROFILE') . '\\bin';
+    } else {
+        $installDir = '/usr/local/bin';
+    }
+}
+
+// Create install directory if needed
+if (!is_dir($installDir)) {
+    mkdir($installDir, 0755, true);
+}
+
+$pharPath = rtrim($installDir, '/\\') . ($isWindows ? '\\div.phar' : '/div.phar');
+
+echo "  OS:         " . ($isWindows ? 'Windows' : ($isMac ? 'macOS' : 'Linux')) . "\n";
+echo "  Install to: {$installDir}\n\n";
+
+// Check for local source
+$localPhar = $projectRoot . '/build/div.phar';
+$hasLocalPhar = file_exists($localPhar);
+$hasComposerJson = file_exists($projectRoot . '/composer.json');
+
+if ($fromHere || ($hasLocalPhar && $hasComposerJson)) {
+    // LOCAL INSTALLATION
+    echo "  Mode:       From here (development)\n";
+    echo "  Source:     {$projectRoot}\n\n";
+    
+    if (!$hasLocalPhar) {
+        echo "  ⚠️  No local PHAR found.\n";
+        echo "     Building PHAR from source...\n\n";
+        
+        // Build PHAR
+        $buildScript = $projectRoot . '/build/build-phar.php';
+        if (!file_exists($buildScript)) {
+            echo "  ❌ Build script not found: {$buildScript}\n\n";
+            exit(1);
+        }
+        
+        echo "  Running: php build/build-phar.php\n";
+        $output = [];
+        $returnCode = 0;
+        exec('php -d phar.readonly=0 "' . $buildScript . '" 2>&1', $output, $returnCode);
+        
+        if ($returnCode !== 0) {
+            echo "  ❌ Build failed:\n";
+            echo "     " . implode("\n     ", $output) . "\n\n";
+            exit(1);
+        }
+        
+        echo "  ✓ PHAR built successfully\n\n";
+        
+        if (!file_exists($localPhar)) {
+            echo "  ❌ PHAR was not created.\n\n";
+            exit(1);
+        }
+    } else {
+        echo "  ✓ Using existing local PHAR\n\n";
+    }
+    
+    // Copy local PHAR to install location
+    if (!copy($localPhar, $pharPath)) {
+        echo "  ❌ Failed to copy PHAR to {$pharPath}\n";
+        echo "     Check permissions.\n\n";
+        exit(1);
+    }
+    
+    echo "  ✓ Copied div.phar to {$installDir}\n";
+    
+} else {
+    // REMOTE INSTALLATION (from GitHub)
+    echo "  Mode:       Remote (production)\n\n";
+    
+    echo "  Fetching latest release from GitHub...\n";
+    
+    $context = stream_context_create([
+        'http' => [
+            'method' => 'GET',
+            'header' => "User-Agent: div-installer/1.0\r\n",
+            'timeout' => 30,
+            'ignore_errors' => true,
+        ]
+    ]);
+    
+    $apiUrl = 'https://api.github.com/repos/divengine/cli/releases/latest';
+    $response = @file_get_contents($apiUrl, false, $context);
+    
+    if ($response === false) {
+        echo "  ❌ Failed to fetch release info.\n";
+        echo "     Check your internet connection.\n\n";
+        exit(1);
+    }
+    
+    $release = json_decode($response, true);
+    
+    if (json_last_error() !== JSON_ERROR_NONE || !isset($release['tag_name'])) {
+        echo "  ❌ Failed to parse release info.\n\n";
+        exit(1);
+    }
+    
+    $version = $release['tag_name'];
+    $downloadUrl = null;
+    
+    foreach ($release['assets'] ?? [] as $asset) {
+        if ($asset['name'] === 'div.phar') {
+            $downloadUrl = $asset['browser_download_url'];
+            break;
+        }
+    }
+    
+    if ($downloadUrl === null) {
+        echo "  ❌ div.phar not found in latest release.\n";
+        echo "     Version: {$version}\n\n";
+        exit(1);
+    }
+    
+    echo "  Version:    {$version}\n";
+    echo "  Source:     {$downloadUrl}\n\n";
+    echo "  Downloading...\n";
+    
+    $downloadContext = stream_context_create([
+        'http' => [
+            'method' => 'GET',
+            'header' => "User-Agent: div-installer/1.0\r\n",
+            'timeout' => 120,
+        ],
+    ]);
+    
+    $pharContent = @file_get_contents($downloadUrl, false, $downloadContext);
+    
+    if ($pharContent === false) {
+        echo "  ❌ Failed to download div.phar.\n\n";
+        exit(1);
+    }
+    
+    if (file_put_contents($pharPath, $pharContent) === false) {
+        echo "  ❌ Failed to write {$pharPath}\n";
+        echo "     Check permissions.\n\n";
+        exit(1);
+    }
+    
+    echo "  ✓ Downloaded div.phar\n";
+}
+
+// Make executable on Unix
+if (!$isWindows) {
+    chmod($pharPath, 0755);
+}
+
+echo "\n";
+echo "  ─────────────────────────────────────\n";
+echo "  ✓ Installation complete!\n";
+echo "  ─────────────────────────────────────\n\n";
+
+if ($isWindows) {
+    echo "  Run: php {$pharPath} --help\n";
+    echo "\n";
+    echo "  To use without 'php', add {$installDir} to your PATH.\n";
+} else {
+    echo "  Run: {$pharPath} --help\n";
+    echo "  Or:  chmod +x {$pharPath} && {$pharPath} --help\n";
+}
+
+echo "\n";
+echo "  Learn more: https://github.com/divengine/cli\n";
+echo "\n";
