@@ -144,14 +144,6 @@ List packages in vendor directory.
 div packages
 ```
 
-### `div resolve <template>`
-Resolve a template identifier to a physical path.
-
-```bash
-div resolve template.tpl
-# Output: /absolute/path/to/template.tpl
-```
-
 ## Template Format
 
 Templates use `{$variable}` syntax for variable substitution (Divengine syntax):

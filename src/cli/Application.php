@@ -45,7 +45,6 @@ class Application
         $this->register(new \divengine\commands\BuildCommand());
         $this->register(new \divengine\commands\TemplatesCommand());
         $this->register(new \divengine\commands\PackagesCommand());
-        $this->register(new \divengine\commands\ResolveCommand());
     }
 
     public function register(Command $command): void
