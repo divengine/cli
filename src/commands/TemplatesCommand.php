@@ -83,7 +83,7 @@ Options:
         $templates = Filesystem::listTemplates($fullPath);
 
         if (empty($templates)) {
-            Console::warning("No .tpl files found in: {$fullPath}");
+            Console::warning("No .tpl or .div files found in: {$fullPath}");
             return 0;
         }
 
@@ -91,9 +91,12 @@ Options:
         Console::line();
 
         foreach ($templates as $template) {
+            $ext = $template['extension'] ?? 'tpl';
             Console::segments([
                 ['text' => '  ' . str_pad($template['name'], 20), 'color' => Console::CYAN, 'bold' => true],
-                ['text' => $template['path'], 'color' => Console::YELLOW],
+                ['text' => '.', 'color' => Console::GRAY],
+                ['text' => $ext, 'color' => Console::YELLOW],
+                ['text' => '  ' . $template['path'], 'color' => Console::GRAY],
             ]);
         }
 
@@ -135,9 +138,12 @@ Options:
         Console::line();
 
         foreach ($allTemplates as $template) {
+            $ext = $template['extension'] ?? 'tpl';
             Console::segments([
                 ['text' => '  ' . str_pad($template['name'], 20), 'color' => Console::CYAN, 'bold' => true],
-                ['text' => $template['path'], 'color' => Console::YELLOW],
+                ['text' => '.', 'color' => Console::GRAY],
+                ['text' => $ext, 'color' => Console::YELLOW],
+                ['text' => '  ' . $template['path'], 'color' => Console::GRAY],
             ]);
         }
 

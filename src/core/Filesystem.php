@@ -89,6 +89,7 @@ class Filesystem
     public static function listTemplates(string $rootPath): array
     {
         $templates = [];
+        $extensions = ['tpl', 'div'];
 
         if (!is_dir($rootPath)) {
             return $templates;
@@ -100,13 +101,17 @@ class Filesystem
         );
 
         foreach ($iterator as $file) {
-            if ($file->isFile() && $file->getExtension() === 'tpl') {
-                $relativePath = self::relativePath($rootPath, $file->getPathname());
-                $templates[] = [
-                    'path' => $relativePath,
-                    'full_path' => $file->getPathname(),
-                    'name' => $file->getBasename('.tpl'),
-                ];
+            if ($file->isFile()) {
+                $ext = $file->getExtension();
+                if (in_array($ext, $extensions, true)) {
+                    $relativePath = self::relativePath($rootPath, $file->getPathname());
+                    $templates[] = [
+                        'path' => $relativePath,
+                        'full_path' => $file->getPathname(),
+                        'name' => $file->getBasename('.' . $ext),
+                        'extension' => $ext,
+                    ];
+                }
             }
         }
 
