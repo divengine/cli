@@ -6,10 +6,10 @@ echo   div CLI Installer (Windows)
 echo   ─────────────────────────────
 echo.
 
-:: Check for --local flag
-set "LOCAL_MODE="
-echo %* | findstr /i "--local" >nul
-if not errorlevel 1 set "LOCAL_MODE=1"
+:: Check for --from-here flag
+set "FROM_HERE="
+echo %* | findstr /i "--from-here" >nul
+if not errorlevel 1 set "FROM_HERE=1"
 
 :: Get install directory from command line or use default
 set "INSTALL_DIR=%USERPROFILE%\bin"
@@ -27,8 +27,8 @@ set "LOCAL_PHAR=%PROJECT_ROOT%\build\div.phar"
 echo   Install to: %INSTALL_DIR%
 echo.
 
-if defined LOCAL_MODE (
-    echo   Mode:       Local (development)
+if defined FROM_HERE (
+    echo   Mode:       From here (development)
     echo   Source:     %PROJECT_ROOT%
     echo.
 

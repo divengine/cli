@@ -2,13 +2,13 @@
 #
 # Usage:
 #   # Install from local source (development)
-#   php install --local
+#   php install --from-here
 #   
 #   # Download from GitHub releases (production)
 #   irm https://raw.githubusercontent.com/divengine/cli/main/install.ps1 | iex
 
 param(
-    [switch]$Local,
+    [switch]$FromHere,
     [string]$InstallDir = "$env:USERPROFILE\bin"
 )
 
@@ -42,9 +42,9 @@ $LocalPhar = Join-Path $ProjectRoot "build\div.phar"
 $HasLocalPhar = Test-Path $LocalPhar
 $HasComposerJson = Test-Path (Join-Path $ProjectRoot "composer.json")
 
-if ($Local -or ($HasLocalPhar -and $HasComposerJson)) {
+if ($FromHere -or ($HasLocalPhar -and $HasComposerJson)) {
     # LOCAL INSTALLATION
-    Write-Host "  Mode:       Local (development)" -ForegroundColor Cyan
+    Write-Host "  Mode:       From here (development)" -ForegroundColor Cyan
     Write-Host "  Source:     $ProjectRoot" -ForegroundColor Gray
     Write-Host ""
 

@@ -57,7 +57,7 @@ If you're developing div CLI, install from local source:
 # Clone and install from local build
 git clone https://github.com/divengine/cli.git
 cd cli
-php install --local
+php install --from-here
 
 # This will:
 # 1. Build the PHAR from source (if not exists)

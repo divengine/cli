@@ -7,7 +7,7 @@
  * 
  * Usage:
  *   # Install from local source (development)
- *   php install --local
+ *   php install --from-here
  *   
  *   # Download from GitHub releases (production)
  *   curl -sSL https://raw.githubusercontent.com/divengine/cli/main/install | php
@@ -15,8 +15,8 @@
 
 declare(strict_types=1);
 
-$options = getopt('', ['local', 'install-dir::', 'help']);
-$local = isset($options['local']);
+$options = getopt('', ['from-here', 'install-dir::', 'help']);
+$fromHere = isset($options['from-here']);
 $installDir = $options['install-dir'] ?? null;
 $showHelp = isset($options['help']);
 
@@ -27,13 +27,13 @@ div CLI Installer
 
 Usage:
   # Install from local source (for development)
-  php install --local
+  php install --from-here
   
   # Download from GitHub releases (for production)
   curl -sSL https://raw.githubusercontent.com/divengine/cli/main/install | php
 
 Options:
-  --local            Use local source/build instead of downloading
+  --from-here        Use local source/build instead of downloading
   --install-dir=DIR  Directory to install (default: auto-detect)
   --help             Show this help message
 
@@ -78,9 +78,9 @@ $localPhar = $projectRoot . '/build/div.phar';
 $hasLocalPhar = file_exists($localPhar);
 $hasComposerJson = file_exists($projectRoot . '/composer.json');
 
-if ($local || ($hasLocalPhar && $hasComposerJson)) {
+if ($fromHere || ($hasLocalPhar && $hasComposerJson)) {
     // LOCAL INSTALLATION
-    echo "  Mode:       Local (development)\n";
+    echo "  Mode:       From here (development)\n";
     echo "  Source:     {$projectRoot}\n\n";
     
     if (!$hasLocalPhar) {
