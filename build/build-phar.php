@@ -1,20 +1,28 @@
 #!/usr/bin/env php
 <?php
-/**
- * Build script for div.phar
- * 
- * This script packages the div CLI into a single PHAR file.
- * 
- * Requirements:
- * - PHP >= 8.1
- * - Phar extension enabled
- * - phar.readonly must be set to 0 (use -d phar.readonly=0)
- * 
- * Usage:
- *   php -d phar.readonly=0 build/build-phar.php
- */
 
-declare(strict_types=1);
+/**
+ * [[]] Div CLI - PHAR Build Script
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+ * or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License
+ * for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program as the file LICENSE.txt; if not, please see
+ * https://www.gnu.org/licenses/gpl-3.0.txt
+ *
+ * @package divengine/cli
+ * @author  Rafa Rodriguez @rafageist [https://rafageist.com]
+ * @version 1.0.0
+ *
+ * @link    https://github.com/divengine/cli
+ */
 
 $buildDir = __DIR__;
 $pharPath = $buildDir . '/div.phar';
